@@ -16,6 +16,7 @@ import com.becarios.pokedex.R
 import com.becarios.pokedex.presentation.about.AboutActivity
 import com.becarios.pokedex.presentation.details.PokemonsDetailsActivity
 import kotlinx.android.synthetic.main.activity_pokemons.*
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 
 class PokemonsActivity : AppCompatActivity() {
@@ -23,18 +24,20 @@ class PokemonsActivity : AppCompatActivity() {
     lateinit var layoutManager: LinearLayoutManager
     var loading = false
     var limit = 20
+    private val viewModel : PokemonViewModel by viewModel()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         layoutManager = LinearLayoutManager(this)
         setContentView(R.layout.activity_pokemons)
-        val viewModel = ViewModelProvider(this).get(PokemonViewModel::class.java)
+        //val viewModel = ViewModelProvider(this).get(PokemonViewModel::class.java)
 
         infoButtonHeader.setOnClickListener{
             val intent = Intent(this, AboutActivity::class.java)
             startActivity(intent)
         }
 
-        viewModel.mLiveData.observe(this, Observer {
+        viewModel.getPokemon().observe(this, Observer {
             it?.let { pokemons ->
                 with(recyclerView) {
                     layoutManager = GridLayoutManager(this@PokemonsActivity, 1)
@@ -66,7 +69,7 @@ class PokemonsActivity : AppCompatActivity() {
                                     viewModel.getPokemonPage(limit)
                                     progressBar.visibility = (View.VISIBLE)
                                     Handler(Looper.getMainLooper()).postDelayed({
-                                        viewModel.mLiveData.observe(
+                                        viewModel.justForPaginationLiveData.observe(
                                             this@PokemonsActivity,
                                             Observer {
                                                 it?.let { pokemons ->
@@ -87,30 +90,27 @@ class PokemonsActivity : AppCompatActivity() {
                 }
             }
         })
-        viewModel.getPokemon()
-
-
-        viewModel._mLiveData.observe(this, Observer {
-            it?.let { pokemons ->
-                with(recyclerView) {
-                    layoutManager = GridLayoutManager(this@PokemonsActivity, 1)
-                    setHasFixedSize(true)
-                    adapter = PokemonIdAdapter(pokemons) { pokemon ->
-                        val intent = PokemonsDetailsActivity.getStartInt(
-                            this@PokemonsActivity,
-                            pokemon.name,
-                            pokemon.id,
-                            pokemon.typeName1
-                        )
-                        this@PokemonsActivity.startActivity(intent)
-                    }
-                }
-            }
-        })
 
         searchHeader.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                viewModel.getPokemonId(query)
+
+                viewModel.getPokemonId(query).observe(this@PokemonsActivity, Observer {
+                    it?.let { pokemons ->
+                        with(recyclerView) {
+                            layoutManager = GridLayoutManager(this@PokemonsActivity, 1)
+                            setHasFixedSize(true)
+                            adapter = PokemonIdAdapter(pokemons) { pokemon ->
+                                val intent = PokemonsDetailsActivity.getStartInt(
+                                    this@PokemonsActivity,
+                                    pokemon.name,
+                                    pokemon.id,
+                                    pokemon.typeName1
+                                )
+                                this@PokemonsActivity.startActivity(intent)
+                            }
+                        }
+                    }
+                })
                 return false
             }
 

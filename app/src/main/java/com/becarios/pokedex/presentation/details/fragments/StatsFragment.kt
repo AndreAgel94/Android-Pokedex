@@ -15,6 +15,7 @@ import com.becarios.pokedex.R
 import com.becarios.pokedex.presentation.pokemons.DamageViewModel
 import com.becarios.pokedex.presentation.pokemons.EnumPoke
 import kotlinx.android.synthetic.main.fragment_stats.*
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.*
 
 class StatsFragment : Fragment() {
@@ -22,13 +23,13 @@ class StatsFragment : Fragment() {
     var pokemonType = String()
     var id = String()
     var damageType = 0
+    private val statsViewModel : StatsViewModel by viewModel()
+    private  val damageViewModel : DamageViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val damageViewModel = ViewModelProvider(this).get(DamageViewModel::class.java)
-        val statsViewModel: StatsViewModel = ViewModelProvider(this).get(StatsViewModel::class.java)
 
-        statsViewModel.mLiveData.observe(this, Observer {
+        statsViewModel.getStats(value,pokemonType).observe(this, Observer {
             it?.let { stats ->
                 with(recyclerViewStats) {
                     layoutManager = GridLayoutManager(this@StatsFragment.context, 1)
@@ -38,9 +39,10 @@ class StatsFragment : Fragment() {
                 }
             }
         })
-        statsViewModel.getStats(value, pokemonType)
+        //statsViewModel.getStats(value, pokemonType)
+        getDamageType()
 
-        damageViewModel.mmLiveData.observe(this, {
+        damageViewModel.getDamage(damageType).observe(this, {
             it?.let { damage ->
 
                 txtWeakness1.text = damage[0].name0.capitalize(Locale.ROOT)
@@ -756,8 +758,6 @@ class StatsFragment : Fragment() {
                 }
             }
         })
-        getDamageType()
-        damageViewModel.getDamage(damageType)
     }
 
     private fun getDamageType() {
